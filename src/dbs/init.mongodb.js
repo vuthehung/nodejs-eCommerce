@@ -1,9 +1,10 @@
 'use strict'
 
 const mongoose = require("mongoose")
+const {db: {host, port, name}} = require('../configs/config.mongodb')
+const connectString = `mongodb://${host}:${port}/${name}`
 
-const connectString = `mongodb://0.0.0.0:27017/shopDEV`
-
+console.log('connectString::', connectString)
 // strategy pattern
 class Database {
 
