@@ -7,14 +7,15 @@ const app = express()
 // init middlewares
 app.use(morgan('dev'))
 app.use(helmet())
+app.use(express.json())
+app.use(express.urlencoded({
+    extended: true
+}))
+
 // intit db
 require('./dbs/init.mongodb')
 // init routes
-app.get('/', (req, res, next) => {
-    return res.status(200).json({
-        message: 'Welcome'
-    })
-})
+app.use('/', require('./routes'))
 // inti handling error
 
 module.exports = app
