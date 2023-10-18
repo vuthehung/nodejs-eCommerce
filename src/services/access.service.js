@@ -9,6 +9,7 @@ const {getInfoData} = require("../utils")
 const { BadRequestError, AuthFailureError, ForbiddenError } = require("../core/error.response")
 const { findByEmail } = require("./shop.service")
 const keytokenModel = require("../models/keytoken.model")
+const { keys } = require("lodash")
 
 const RoleShop = {
     SHOP: 'SHOP',
@@ -22,33 +23,23 @@ class AccessService {
         khi accessToken hết hạn -> Người dùng sử dụng RT  lấy lại cặp AT và RT mới thông qua handlerRefreshToken
         khi có ngườI sử dụng token này -> đưa vào diện nghi vấn
     */
-    static handlerRefreshToken = async (refreshToken) => {
-        //check xem token nay da duoc su dung hay chua?
-        const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken)
-        //neu co
-        if(foundToken) {
-            //decode xem la ai??
-            const {userId, email} = await verifyJWT(refreshToken, foundToken.privateKey)
-            console.log({userId, email})
-            //xoa tat ca token trong keystore
+    static handlerRefreshToken = async ({keyStore, user, refreshToken}) => {
+        const { userId, email } = user
+        console.log({userId, email})
+        if(keyStore.refreshTokensUsed.includes(refreshToken)) {
             await KeyTokenService.deleteKeyById(userId)
             throw new ForbiddenError('Something wrong happend !! Pls relogin')
         }
-        
-        const holderToken = await KeyTokenService.findByRefreshToken(refreshToken)
-        if(!holderToken) throw new AuthFailureError('Shop not registered')
 
-        //verify token
-        const {userId, email} = await verifyJWT(refreshToken, holderToken.privateKey)
-        console.log('[2]--', {userId, email})
-        //check userId
+        if(keyStore.refreshToken !== refreshToken) throw new AuthFailureError('Shop not registered')
+        
         const foundShop = await findByEmail({email})
         if(!foundShop) throw new AuthFailureError('Shop not registered')
 
         //create 1 cap token moi
-        const tokens = await createTokenPair({userId, email}, holderToken.publicKey, holderToken.privateKey)
+        const tokens = await createTokenPair({userId, email}, keyStore.publicKey, keyStore.privateKey)
         //update token
-        await holderToken.updateOne({
+        await keyStore.updateOne({
             $set: {
                 refreshToken: tokens.refreshToken
             },
@@ -56,8 +47,9 @@ class AccessService {
                 refreshTokensUsed: refreshToken //da duoc su dung de lay token moi roi
             }
         })
+
         return {
-            user: {userId, email},
+            user,
             tokens
         }
     }
