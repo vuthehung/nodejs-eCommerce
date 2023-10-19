@@ -25,7 +25,6 @@ class AccessService {
     */
     static handlerRefreshToken = async ({keyStore, user, refreshToken}) => {
         const { userId, email } = user
-        console.log({userId, email})
         if(keyStore.refreshTokensUsed.includes(refreshToken)) {
             await KeyTokenService.deleteKeyById(userId)
             throw new ForbiddenError('Something wrong happend !! Pls relogin')
