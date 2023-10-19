@@ -5,15 +5,24 @@ const {BadRequestError} = require('../core/error.response')
 
 //define factory class to create product
 class ProductSerivice {
+    //v2
+    static productRegistry = {} //key - class
+    static registerProductType(type, classRef) {
+        ProductSerivice.productRegistry[type] = classRef
+    }
     static async createProduct(type, payload) {
-        switch(type) {
-            case 'Clothing': 
-                return new Clothing(payload).createProduct()
-            case 'Electronic':
-                return new Electrnic(payload).createProduct()
-            default:
-                throw new BadRequestError(`Invalid Product Type ${type}`)
-        }
+        // switch(type) {
+        //     case 'Clothing': 
+        //         return new Clothing(payload).createProduct()
+        //     case 'Electronic':
+        //         return new Electrnic(payload).createProduct()
+        //     default:
+        //         throw new BadRequestError(`Invalid Product Type ${type}`)
+        // }
+        const productClass = ProductSerivice.productRegistry[type]
+        if(!productClass) throw new BadRequestError(`Invalid Product Type ${type}`)
+
+        return new productClass(payload).createProduct()
     }
 
 }
@@ -55,7 +64,7 @@ class Clothing extends Product {
     }
 }
 //define sub-class for different product type Electrnic
-class Electrnic extends Product {
+class Electronic extends Product {
     async createProduct() {
         const newElectronic = await electronic.create({
             ...this.product_attributes,
@@ -69,5 +78,9 @@ class Electrnic extends Product {
         return newProduct
     }
 }
+
+//add class
+ProductSerivice.registerProductType('Clothing', Clothing)
+ProductSerivice.registerProductType('Electronic', Electronic)
 
 module.exports = ProductSerivice
